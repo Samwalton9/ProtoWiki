@@ -1,0 +1,1 @@
+import{H as o}from"./homeRoutes-BQCku49V.js";const e=`${o}/community-configuration`,s=[{id:"GrowthBacklogs",title:"Backlogs",description:"Customize the newcomer homepage's Backlogs module.",intro:"The backlogs the Backlogs module can show, and how many pages it takes for each to be flagged as Backlogged."}];export{e as C,s as F};
