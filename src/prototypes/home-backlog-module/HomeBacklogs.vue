@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * The Backlogs module's body: a card for each admin backlog category, largest
- * first, with how many pages wait in it. A count over the threshold is bold and
+ * The Backlogs module's body: a card for each admin backlog category the
+ * reader has turned on (`useBacklogSelection`, at most three), largest first, with how many pages wait in it. A count over the threshold is bold and
  * red, under a "Backlogged" chip. Each card opens the category's own page (`backlog/[category]/index.vue`),
  * a list of the pages in it.
  */
@@ -11,13 +11,27 @@ import { CdxButton, CdxCard, CdxInfoChip } from '@wikimedia/codex'
 import { preservedQueryFromLocationQuery } from '@/appearance/url-query'
 
 import { HOME_PATH } from './homeRoutes'
-import { BACKLOG_CATEGORIES, loadBacklogCards, type BacklogCard } from './loadBacklogs'
+import { loadBacklogCards, type BacklogCard } from './loadBacklogs'
+import { useBacklogSelection } from './useBacklogSelection'
 import { useModuleLoad } from './useModuleLoad'
+
+const emit = defineEmits<{ choose: [] }>()
 
 const route = useRoute()
 const router = useRouter()
 
-const { items: cards, loading, error, reload } = useModuleLoad(() => '', loadBacklogCards)
+const { enabled } = useBacklogSelection()
+
+const {
+  items: cards,
+  loading,
+  error,
+  reload,
+} = useModuleLoad(
+  // Reloads when the choice changes, or Community Configuration changes a chosen backlog.
+  () => JSON.stringify(enabled.value),
+  (signal) => loadBacklogCards(enabled.value, signal),
+)
 
 function location(card: BacklogCard) {
   return {
@@ -41,9 +55,14 @@ function open(event: MouseEvent, card: BacklogCard): void {
       <CdxButton weight="quiet" @click="reload">Try again</CdxButton>
     </div>
 
+    <div v-else-if="!enabled.length" class="home-backlogs__error">
+      <p>No backlogs chosen.</p>
+      <CdxButton weight="quiet" @click="emit('choose')">Choose backlogs</CdxButton>
+    </div>
+
     <template v-else-if="loading">
       <div
-        v-for="category in BACKLOG_CATEGORIES"
+        v-for="category in enabled"
         :key="category.id"
         class="home-card-skeleton"
         aria-hidden="true"

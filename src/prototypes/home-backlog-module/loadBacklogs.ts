@@ -1,6 +1,7 @@
 /**
- * Backlogs: English Wikipedia's admin backlog categories, largest first, and the
- * pages waiting in each. Both are live and never cached: backlogs move all day.
+ * Backlogs: English Wikipedia's admin backlog categories (as Community
+ * Configuration sets them, `useBacklogConfig`), largest first, and the pages
+ * waiting in each. Both are live and never cached: backlogs move all day.
  */
 
 import { wikimediaApiFetchHeaders } from '@/config'
@@ -10,8 +11,8 @@ import { formatAgo } from './relativeTime'
 /* The Home's lookups are English Wikipedia's. */
 const HOST = 'en.wikipedia.org'
 
-/** More pages than this, and the category is backlogged right now. */
-export const BACKLOG_THRESHOLD = 50
+/** More pages than this, and a backlog is backlogged right now — until Community Configuration says otherwise. */
+export const DEFAULT_THRESHOLD = 50
 
 /** Pages listed on a category's own page — the Action API's most per call. */
 const PAGE_LIMIT = 500
@@ -22,23 +23,48 @@ export interface BacklogCategory {
   label: string
   /** Full category title, with its namespace. */
   title: string
+  /** More pages than this, and it's backlogged. */
+  threshold: number
 }
 
-export const BACKLOG_CATEGORIES: readonly BacklogCategory[] = [
+/** The backlogs before Community Configuration changes them. */
+export const DEFAULT_BACKLOGS: readonly BacklogCategory[] = [
   {
     id: 'speedy-deletion',
     label: 'Candidates for speedy deletion',
     title: 'Category:Candidates for speedy deletion',
+    threshold: DEFAULT_THRESHOLD,
   },
   {
     id: 'unblock-requests',
     label: 'Requests for unblock',
     title: 'Category:Requests for unblock',
+    threshold: DEFAULT_THRESHOLD,
   },
   {
     id: 'copyright-problems',
     label: 'Pages tagged for copyright problems',
     title: 'Category:Wikipedia pages tagged for copyright problems',
+    threshold: DEFAULT_THRESHOLD,
+  },
+  {
+    id: 'coi-edit-requests',
+    label: 'Conflict of interest edit requests',
+    title: 'Category:Wikipedia conflict of interest edit requests',
+    threshold: DEFAULT_THRESHOLD,
+  },
+  {
+    id: 'expired-prods',
+    label: 'Expired proposed deletions',
+    title: 'Category:Expired proposed deletions',
+    threshold: DEFAULT_THRESHOLD,
+  },
+  {
+    id: 'commons-duplicates',
+    label: 'Files with the same name on Wikimedia Commons',
+    // The parent category holds only dated subcategories; this one holds every file.
+    title: 'Category:All Wikipedia files with the same name on Wikimedia Commons',
+    threshold: DEFAULT_THRESHOLD,
   },
 ]
 
@@ -64,8 +90,12 @@ interface ApiCategoryInfo {
   files?: number
 }
 
+/** The Category namespace. */
+const CATEGORY_NAMESPACE = 14
+
 interface ApiCategoryMember {
   pageid: number
+  ns: number
   title: string
   timestamp?: string
 }
@@ -84,29 +114,31 @@ export function pageUrl(title: string): string {
   return `https://${HOST}/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`
 }
 
-export function backlogCategory(id: string): BacklogCategory | undefined {
-  return BACKLOG_CATEGORIES.find((category) => category.id === id)
-}
-
-/** Each backlog category's size, in one call, largest first. */
-export async function loadBacklogCards(signal: AbortSignal): Promise<BacklogCard[]> {
+/** Each given backlog category's size, in one call, largest first. */
+export async function loadBacklogCards(
+  categories: readonly BacklogCategory[],
+  signal: AbortSignal,
+): Promise<BacklogCard[]> {
+  if (!categories.length) return []
   const data = await action<{
     query?: { pages?: { title: string; categoryinfo?: ApiCategoryInfo }[] }
   }>(
     {
       action: 'query',
       prop: 'categoryinfo',
-      titles: BACKLOG_CATEGORIES.map((category) => category.title).join('|'),
+      titles: categories.map((category) => category.title).join('|'),
     },
     signal,
   )
   const info = new Map((data.query?.pages ?? []).map((page) => [page.title, page.categoryinfo]))
 
-  return BACKLOG_CATEGORIES.map((category) => {
-    const found = info.get(category.title)
-    const count = (found?.pages ?? 0) + (found?.files ?? 0)
-    return { ...category, count, backlogged: count > BACKLOG_THRESHOLD }
-  }).sort((a, b) => b.count - a.count)
+  return categories
+    .map((category) => {
+      const found = info.get(category.title)
+      const count = (found?.pages ?? 0) + (found?.files ?? 0)
+      return { ...category, count, backlogged: count > category.threshold }
+    })
+    .sort((a, b) => b.count - a.count)
 }
 
 /** The pages in one backlog category, newest to join first. */
@@ -119,6 +151,7 @@ export async function loadBacklogPages(
       action: 'query',
       list: 'categorymembers',
       cmtitle: category.title,
+      // Ignored with `cmsort: 'timestamp'`: subcategories come back too, and are dropped below.
       cmtype: 'page|file',
       cmprop: 'ids|title|timestamp',
       cmsort: 'timestamp',
@@ -127,10 +160,12 @@ export async function loadBacklogPages(
     },
     signal,
   )
-  return (data.query?.categorymembers ?? []).map((member) => ({
-    key: String(member.pageid),
-    title: member.title,
-    href: pageUrl(member.title),
-    ago: member.timestamp ? `Added ${formatAgo(Date.parse(member.timestamp))}` : '',
-  }))
+  return (data.query?.categorymembers ?? [])
+    .filter((member) => member.ns !== CATEGORY_NAMESPACE)
+    .map((member) => ({
+      key: String(member.pageid),
+      title: member.title,
+      href: pageUrl(member.title),
+      ago: member.timestamp ? `Added ${formatAgo(Date.parse(member.timestamp))}` : '',
+    }))
 }

@@ -29,10 +29,7 @@ export function readDayCache<T>(slot: string, key: string, maxAgeMs?: number): T
 export function writeDayCache<T>(slot: string, key: string, value: T[]): void {
   if (!value.length) return
   try {
-    window.localStorage.setItem(
-      CACHE_PREFIX + slot,
-      JSON.stringify({ key, value, at: Date.now() }),
-    )
+    window.localStorage.setItem(CACHE_PREFIX + slot, JSON.stringify({ key, value, at: Date.now() }))
   } catch {
     // Full or unavailable storage must never break the page.
   }

@@ -14,7 +14,12 @@ import { useModuleLoad } from './useModuleLoad'
 
 const { seeds } = useHomeSeeds()
 
-const { items: reads, loading, error, reload } = useModuleLoad(
+const {
+  items: reads,
+  loading,
+  error,
+  reload,
+} = useModuleLoad(
   () => seeds.value.join('\n'),
   (signal) => loadDailyReads(seeds.value, signal),
 )

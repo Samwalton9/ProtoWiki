@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { cdxIconHome } from '@wikimedia/codex-icons'
 
 import ChromeWrapper from '@/components/chrome/ChromeWrapper.vue'
 import SpecialPageWrapper from '@/components/SpecialPageWrapper.vue'
+import { preservedQueryFromLocationQuery } from '@/appearance/url-query'
 import { useConfig } from '@/composables/useConfig'
 import { globalSkin } from '@/theme'
 import HomeActiveDiscussions from './HomeActiveDiscussions.vue'
 import HomeBacklogs from './HomeBacklogs.vue'
+import HomeBacklogsDialog from './HomeBacklogsDialog.vue'
 import HomeDailyReads from './HomeDailyReads.vue'
 import HomeImpact from './HomeImpact.vue'
 import HomeMentor from './HomeMentor.vue'
@@ -16,7 +19,13 @@ import HomePageHeader from './HomePageHeader.vue'
 import HomeReviewChanges from './HomeReviewChanges.vue'
 import HomeSectionFrame from './HomeSectionFrame.vue'
 import HomeSuggestedEdits from './HomeSuggestedEdits.vue'
-import { DAILY_READS_MENU, REVIEW_CHANGES_MENU, SUGGESTED_EDITS_MENU } from './homeModuleMenus'
+import {
+  BACKLOGS_MENU,
+  DAILY_READS_MENU,
+  REVIEW_CHANGES_MENU,
+  SUGGESTED_EDITS_MENU,
+} from './homeModuleMenus'
+import { COMMUNITY_CONFIGURATION_PATH } from './communityConfiguration'
 import { MENTOR_CONTENT } from './mentorContent'
 import { useHomeMentor } from './useHomeMentor'
 
@@ -51,6 +60,23 @@ const mentorMenu = computed(() => ({
   footer: { value: 'about', label: 'About mentors' },
 }))
 
+const route = useRoute()
+const router = useRouter()
+
+/* Backlogs' "Choose backlogs" dialog. */
+const choosingBacklogs = ref(false)
+
+/* "Configure" leads to the module's Community Configuration form. */
+function onBacklogsMenuSelect(value: string | number): void {
+  if (value === 'choose') choosingBacklogs.value = true
+  if (value === 'configure') {
+    void router.push({
+      path: `${COMMUNITY_CONFIGURATION_PATH}/GrowthBacklogs`,
+      query: preservedQueryFromLocationQuery(route.query),
+    })
+  }
+}
+
 function onMentorMenuSelect(value: string | number): void {
   if (value === 'opt-out') optOutOfMentor()
   if (value === 'get-mentor') assignMentor()
@@ -67,7 +93,11 @@ function onMentorMenuSelect(value: string | number): void {
         <div class="home-modules home-modules--main">
           <!-- For admins in production. Here every Mock user sees it, for testing. -->
           <HomeSectionFrame id="backlogs" title="Backlogs">
-            <HomeBacklogs />
+            <template #actions>
+              <HomeModuleMenu :menu="BACKLOGS_MENU" @select="onBacklogsMenuSelect" />
+            </template>
+            <HomeBacklogs @choose="choosingBacklogs = true" />
+            <HomeBacklogsDialog v-model:open="choosingBacklogs" />
           </HomeSectionFrame>
 
           <HomeSectionFrame id="suggested-edits" title="Suggested edits">

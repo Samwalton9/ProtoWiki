@@ -60,10 +60,12 @@ async function perSeed<T>(
   for (const seed of seeds) {
     if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
     // One seed failing shouldn't cost the others.
-    results.push(await fetchFor(seed).catch((error: unknown) => {
-      if (signal.aborted) throw error
-      return []
-    }))
+    results.push(
+      await fetchFor(seed).catch((error: unknown) => {
+        if (signal.aborted) throw error
+        return []
+      }),
+    )
   }
   return results
 }

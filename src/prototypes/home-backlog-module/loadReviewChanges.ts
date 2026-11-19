@@ -107,10 +107,12 @@ async function diffAndTone(
   signal: AbortSignal,
 ): Promise<{ diff: RevisionDiff | null; tone: boolean }> {
   if (!revision.parentid) return { diff: null, tone: false }
-  const diff = await fetchDiff(revision.parentid, revision.revid, signal).catch((error: unknown) => {
-    if (signal.aborted) throw error
-    return null
-  })
+  const diff = await fetchDiff(revision.parentid, revision.revid, signal).catch(
+    (error: unknown) => {
+      if (signal.aborted) throw error
+      return null
+    },
+  )
   if (!diff?.addedLines.trim()) return { diff, tone: false }
   const [tone] = await predictTone([diff.addedLines], {
     lang: 'en',
@@ -189,7 +191,10 @@ function chipsFor(revision: Revision, { flag, major }: ReviewSignals): ChangeChi
 }
 
 /** Article descriptions by title, in one call (the Saved pages template's lookup). */
-async function descriptionsFor(titles: string[], signal: AbortSignal): Promise<Map<string, string>> {
+async function descriptionsFor(
+  titles: string[],
+  signal: AbortSignal,
+): Promise<Map<string, string>> {
   const pages = await fetchReadingListPages(titles, { signal, lang: 'en' })
   return new Map(
     pages.flatMap((page) =>

@@ -16,7 +16,8 @@ import { preservedQueryFromLocationQuery } from '@/appearance/url-query'
 
 import HomeSubpageHeader from '../../HomeSubpageHeader.vue'
 import { HOME_PATH } from '../../homeRoutes'
-import { backlogCategory, loadBacklogPages, type BacklogPage } from '../../loadBacklogs'
+import { loadBacklogPages, type BacklogPage } from '../../loadBacklogs'
+import { useBacklogConfig } from '../../useBacklogConfig'
 import { useModuleLoad } from '../../useModuleLoad'
 
 const route = useRoute()
@@ -27,7 +28,9 @@ const categoryId = computed(() => {
   return String(Array.isArray(param) ? param[0] : (param ?? ''))
 })
 
-const category = computed(() => backlogCategory(categoryId.value))
+const { find } = useBacklogConfig()
+
+const category = computed(() => find(categoryId.value))
 
 watch(
   category,

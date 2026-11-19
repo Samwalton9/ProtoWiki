@@ -19,7 +19,8 @@ type MentorStates = Partial<Record<ConfigUser, MentorState>>
 const DEFAULT_STATE: MentorState = { assigned: null, noticeDismissed: false }
 
 function normalizeState(value: unknown): MentorState {
-  const record = typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {}
+  const record =
+    typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {}
   return {
     assigned: typeof record.assigned === 'boolean' ? record.assigned : null,
     noticeDismissed: record.noticeDismissed === true,

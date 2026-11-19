@@ -1,9 +1,18 @@
 /**
  * The modules' "…" menus (`HomeModuleMenu`), shared by the Home and the modules'
- * own pages. The picks don't lead anywhere yet. Mentor's menu changes with its
+ * own pages. Most picks don't lead anywhere yet; Backlogs' "Choose backlogs"
+ * opens its dialog and "Configure" its Community Configuration page (`index.vue`). Mentor's menu changes with its
  * state, so it lives with the module (`index.vue`).
  */
-import { cdxIconConfigure, cdxIconLevelOne } from '@wikimedia/codex-icons'
+import { cdxIconConfigure, cdxIconLevelOne, cdxIconSettings } from '@wikimedia/codex-icons'
+
+export const BACKLOGS_MENU = {
+  items: [
+    { value: 'choose', label: 'Choose backlogs', icon: cdxIconConfigure },
+    { value: 'configure', label: 'Configure', icon: cdxIconSettings },
+  ],
+  footer: { value: 'about', label: 'About backlogs' },
+}
 
 export const SUGGESTED_EDITS_MENU = {
   items: [

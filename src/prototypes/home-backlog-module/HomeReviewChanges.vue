@@ -38,9 +38,7 @@ watch(seedsKey, () => {
   shown.value = PAGE_SIZE
 })
 
-const visible = computed(() =>
-  props.feed ? changes.value : changes.value.slice(0, shown.value),
-)
+const visible = computed(() => (props.feed ? changes.value : changes.value.slice(0, shown.value)))
 const hasMore = computed(() => shown.value < changes.value.length)
 const expanded = computed(() => shown.value > PAGE_SIZE)
 
