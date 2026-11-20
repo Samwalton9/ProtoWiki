@@ -20,6 +20,7 @@ import { useWordmarkMainPageLink } from '@/composables/useWordmarkMainPageLink'
 const ARTICLE_TEMPLATE_PATH = '/template-article'
 
 import { accountActions } from './accountActions'
+import { personalTools } from './personalTools'
 import MinervaMainMenuDrawer from './MinervaMainMenuDrawer.vue'
 
 interface MenuRow {
@@ -93,6 +94,19 @@ const groups = computed((): MenuRow[][] => {
       },
       { id: 'log-in', label: 'Log in', icon: cdxIconLogIn },
     ])
+  }
+
+  // Personal tools are for logged-in users, as in Vector (no avatar logged out).
+  if (!isLoggedOut.value && personalTools.value.length) {
+    const query = preservedQueryFromLocationQuery(route.query)
+    result.push(
+      personalTools.value.map((tool) => ({
+        id: tool.id,
+        label: tool.label,
+        icon: tool.icon,
+        to: { path: tool.path, query },
+      })),
+    )
   }
 
   result.push([

@@ -470,6 +470,10 @@ function onEditNavigate() {
     :saved-pages-route="props.savedPagesRoute"
     @edit-click="onEditNavigate()"
   >
+    <template v-if="$slots['page-actions']" #page-actions="slotProps">
+      <slot name="page-actions" v-bind="slotProps" />
+    </template>
+
     <CdxProgressBar v-if="loading" inline aria-label="Loading article" />
 
     <ArticleLoadErrorMessage v-if="error" :error="error" />
@@ -484,8 +488,12 @@ function onEditNavigate() {
       :app="props.app"
     >
       <template v-if="$slots.default"><slot /></template>
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <div v-else v-html="liveHtml" />
+      <template v-else>
+        <!-- Prototype markup above the live body, e.g. a maintenance notice. -->
+        <slot name="before-content" />
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <div v-html="liveHtml" />
+      </template>
     </ArticleRenderer>
   </ArticleWrapper>
 </template>

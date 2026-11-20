@@ -114,7 +114,11 @@ const chromeHeaderLabel = computed(() => leadTitle.value || 'Article')
       @edit-click="emit('editClick')"
       :main-page="isMainPage"
       :saved-pages-route="props.savedPagesRoute"
-    />
+    >
+      <template v-if="$slots['page-actions']" #page-actions="slotProps">
+        <slot name="page-actions" v-bind="slotProps" />
+      </template>
+    </ArticleHeader>
 
     <slot />
   </article>

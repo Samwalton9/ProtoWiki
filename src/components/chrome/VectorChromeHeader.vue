@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { CdxButton, CdxIcon } from '@wikimedia/codex'
+import { CdxButton, CdxIcon, CdxMenuButton, type MenuGroupData } from '@wikimedia/codex'
 import {
   cdxIconAppearance,
   cdxIconBell,
@@ -9,6 +9,7 @@ import {
   cdxIconDownTriangle,
   cdxIconMenu,
   cdxIconSearch,
+  cdxIconSettings,
   cdxIconTray,
   cdxIconUserAvatar,
   cdxIconWatchlist,
@@ -21,6 +22,7 @@ import { useChromeSearchHandlers } from '@/composables/useChromeSearch'
 import { useConfig } from '@/composables/useConfig'
 import { useWordmarkMainPageLink } from '@/composables/useWordmarkMainPageLink'
 import { DEFAULT_CHROME_NAV_TOOLS, type ChromeNavTool } from './headerNavTools'
+import { personalTools } from './personalTools'
 import { globalTheme } from '@/theme'
 import type { Theme } from '@/theme'
 import { preservedQueryFromLocationQuery } from '@/appearance/url-query'
@@ -128,6 +130,41 @@ function goToSavedPages(): void {
   const location = savedPagesTo.value
   if (!location) return
   void router.push(location)
+}
+
+const MOCK_USER_SETTINGS = 'mock-user-settings'
+
+/** Avatar menu rows: the registered personal tools, then mock user settings. */
+const personalMenuItems = computed((): MenuGroupData[] => {
+  const groups: MenuGroupData[] = [
+    {
+      label: 'Personal tools',
+      hideLabel: true,
+      items: personalTools.value.map((tool) => ({
+        value: tool.id,
+        label: tool.label,
+        icon: tool.icon,
+      })),
+    },
+  ]
+  if (props.prototypingSettings) {
+    groups.push({
+      label: 'Prototyping',
+      hideLabel: true,
+      items: [{ value: MOCK_USER_SETTINGS, label: 'Mock user settings', icon: cdxIconSettings }],
+    })
+  }
+  return groups
+})
+
+function onPersonalMenuSelect(value: string | null, openSettings?: () => void): void {
+  if (value === MOCK_USER_SETTINGS) {
+    openSettings?.()
+    return
+  }
+  const tool = personalTools.value.find((row) => row.id === value)
+  if (!tool) return
+  void router.push({ path: tool.path, query: preservedQueryFromLocationQuery(route.query) })
 }
 </script>
 
@@ -305,8 +342,23 @@ function goToSavedPages(): void {
           <div v-if="navHas('user')" class="vector-chrome-header__user-menu">
             <slot name="user-menu">
               <SettingsPopover v-if="props.prototypingSettings">
-                <template #default="{ toggle, open }">
+                <template #default="{ toggle, open, openPopover }">
+                  <CdxMenuButton
+                    v-if="personalTools.length"
+                    :selected="null"
+                    :menu-items="personalMenuItems"
+                    aria-label="Personal tools"
+                    @update:selected="onPersonalMenuSelect($event, openPopover)"
+                  >
+                    <CdxIcon :icon="cdxIconUserAvatar" />
+                    <CdxIcon
+                      class="vector-chrome-header__user-menu-caret"
+                      :icon="cdxIconDownTriangle"
+                      size="small"
+                    />
+                  </CdxMenuButton>
                   <CdxButton
+                    v-else
                     weight="quiet"
                     aria-label="Mock user settings"
                     aria-haspopup="dialog"
@@ -325,6 +377,20 @@ function goToSavedPages(): void {
                   <UserSettingsPanel :settings-open="settingsOpen" />
                 </template>
               </SettingsPopover>
+              <CdxMenuButton
+                v-else-if="personalTools.length"
+                :selected="null"
+                :menu-items="personalMenuItems"
+                aria-label="Personal tools"
+                @update:selected="onPersonalMenuSelect($event)"
+              >
+                <CdxIcon :icon="cdxIconUserAvatar" />
+                <CdxIcon
+                  class="vector-chrome-header__user-menu-caret"
+                  :icon="cdxIconDownTriangle"
+                  size="small"
+                />
+              </CdxMenuButton>
               <CdxButton v-else weight="quiet" aria-label="User menu" aria-haspopup="menu">
                 <CdxIcon :icon="cdxIconUserAvatar" />
                 <CdxIcon
@@ -484,13 +550,15 @@ a.vector-chrome-header__text-link:hover {
   margin-inline: var(--spacing-8, 8px);
 }
 
-.vector-chrome-header__end .cdx-button {
+.vector-chrome-header__end .cdx-button,
+.vector-chrome-header__end .cdx-toggle-button {
   min-width: var(--size-icon-medium, 32px);
   height: var(--size-icon-medium, 32px);
   padding: 0.5rem 0.4rem;
 }
 
-.vector-chrome-header__user-menu .cdx-button {
+.vector-chrome-header__user-menu .cdx-button,
+.vector-chrome-header__user-menu .cdx-toggle-button {
   display: inline-flex;
   align-items: center;
   gap: 0;

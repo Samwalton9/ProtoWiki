@@ -239,26 +239,30 @@ function onLanguagePick(row: ArticleLanguageLink) {
           <a href="#" class="article-header__tab" @click.prevent="$emit('historyClick')">
             View history
           </a>
-          <div v-if="!isLoggedOut" class="article-header__watch-bookmark">
-            <CdxButton
-              class="article-header__watch"
-              action="progressive"
-              weight="quiet"
-              :aria-pressed="isWatched"
-              @click="onWatchClick"
-            >
-              <CdxIcon :icon="isWatched ? cdxIconUnStar : cdxIconStar" />
-              {{ isWatched ? 'Unwatch' : 'Watch' }}
-            </CdxButton>
-            <CdxButton
-              class="article-header__bookmark"
-              weight="quiet"
-              :aria-pressed="isBookmarked"
-              :aria-label="isBookmarked ? 'Remove from saved items' : 'Save page'"
-              @click="onBookmarkClick"
-            >
-              <CdxIcon :icon="isBookmarked ? cdxIconBookmark : cdxIconBookmarkOutline" />
-            </CdxButton>
+          <div v-if="!isLoggedOut || $slots['page-actions']" class="article-header__watch-bookmark">
+            <template v-if="!isLoggedOut">
+              <CdxButton
+                class="article-header__watch"
+                action="progressive"
+                weight="quiet"
+                :aria-pressed="isWatched"
+                @click="onWatchClick"
+              >
+                <CdxIcon :icon="isWatched ? cdxIconUnStar : cdxIconStar" />
+                {{ isWatched ? 'Unwatch' : 'Watch' }}
+              </CdxButton>
+              <CdxButton
+                class="article-header__bookmark"
+                weight="quiet"
+                :aria-pressed="isBookmarked"
+                :aria-label="isBookmarked ? 'Remove from saved items' : 'Save page'"
+                @click="onBookmarkClick"
+              >
+                <CdxIcon :icon="isBookmarked ? cdxIconBookmark : cdxIconBookmarkOutline" />
+              </CdxButton>
+            </template>
+            <!-- Extra icon actions after Watch / Save (e.g. a report button). -->
+            <slot name="page-actions" :skin="effectiveSkin" :title="pageTitle" />
           </div>
         </div>
       </nav>
@@ -294,6 +298,7 @@ function onLanguagePick(row: ArticleLanguageLink) {
         >
           <CdxIcon :icon="cdxIconDownload" />
         </button>
+        <slot name="page-actions" :skin="effectiveSkin" :title="pageTitle" />
         <button
           type="button"
           class="article-header__icon-tool"
@@ -330,6 +335,7 @@ function onLanguagePick(row: ArticleLanguageLink) {
         >
           <CdxIcon :icon="cdxIconEdit" />
         </button>
+        <slot name="page-actions" :skin="effectiveSkin" :title="pageTitle" />
         <button
           type="button"
           class="article-header__icon-tool article-header__icon-tool--more"
@@ -587,9 +593,15 @@ function onLanguagePick(row: ArticleLanguageLink) {
   font-weight: var(--font-weight-normal);
 }
 
-/* Vector 2022: bookmark overhangs the toolbar inset on the right only. */
-.article-header__bookmark {
+/* Vector 2022: the last icon button overhangs the toolbar inset on the right only. */
+.article-header__bookmark:last-child,
+.article-header__watch-bookmark :slotted(.cdx-button:last-child) {
   margin-inline-end: calc(-1 * var(--spacing-50));
+}
+
+/* Slotted page actions on Minerva: match the built-in icon tools. */
+.article-header__icon-toolbar :slotted(.cdx-button) .cdx-icon {
+  color: var(--color-subtle);
 }
 
 .article-header__tab {
